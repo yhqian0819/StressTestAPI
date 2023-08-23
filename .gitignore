@@ -130,14 +130,3 @@ dmypy.json
 
 # Finder info
 .DS_Store
-
-# moderation virtualenv
-moderation/lyrics_moderation/
-
-# moderation raw training files
-moderation/REPROVADAS_POR_IDIOMA/
-moderation/REPROVADAS_TEMP/
-moderation/REPROVADAS/
-moderation/APROVADAS_POR_IDIOMA/
-moderation/APROVADAS/
-moderation/letras_moderadas_pre-2019/
