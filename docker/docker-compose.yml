@@ -11,6 +11,11 @@ services:
     depends_on:
       - mariadb
       - app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '0.5GB'
 
   mariadb:
     image: mariadb:10.4
@@ -19,8 +24,14 @@ services:
     restart: always
     volumes:
       - ../database:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       MYSQL_ROOT_PASSWORD: root
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: '1.5GB'
 
   app:
     build: ../
@@ -39,3 +50,8 @@ services:
       MYSQL_PASSWORD: root
     depends_on: 
       - mariadb
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: '1.0GB'

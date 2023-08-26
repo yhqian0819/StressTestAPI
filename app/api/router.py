@@ -10,11 +10,19 @@ from library.errors import InternalError, BaseError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("API")
 
-api = Blueprint('api', __name__, url_prefix='/api/')
+api = Blueprint('api', __name__)
 
-@api.route('/chat-topics', methods=['GET'])
-def GetTopics():
-	return handler.GetTopics()
+@api.route('/pessoas', methods=['POST'])
+def NewPessoa():
+	return Handler.NewPessoa()
+
+@api.route('/pessoas/<string:id>', methods=['GET'])
+def GetPessoaByID(id: str):
+	return Handler.GetPessoaByID(id)
+
+@api.route('/pessoas', methods=['GET'])
+def FilterPessoas():
+	return Handler.FilterPessoas()
 
 @api.errorhandler(BaseError)
 def handle_crafted_errors(e: BaseError):

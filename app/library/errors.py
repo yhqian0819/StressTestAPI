@@ -15,6 +15,12 @@ class BadRequest(BaseError, errors.BadRequest):
 	def __init__(self, message: str):
 		super().__init__(description=message)
 
+class UnprocessableEntity(BaseError, errors.UnprocessableEntity):
+	name = 'UNPROCESSABLE_ENTITY'
+
+	def __init__(self, message: str):
+		super().__init__(description=message)
+	
 class NotFound(BaseError, errors.NotFound):
 	name = 'NOT_FOUND'
 

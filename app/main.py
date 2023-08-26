@@ -11,7 +11,7 @@ import logging
 from api.router import api as API
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("APP")
+logger = logging.getLogger("Main")
 
 app = Flask(__name__)
 
