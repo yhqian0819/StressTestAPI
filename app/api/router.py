@@ -8,7 +8,7 @@ import api.handler as Handler
 from library.errors import InternalError, BaseError
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("API")
+logger = logging.getLogger("Router")
 
 api = Blueprint('api', __name__)
 

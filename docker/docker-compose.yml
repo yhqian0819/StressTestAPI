@@ -4,13 +4,14 @@ services:
   web:
     image: nginx:1.17
     ports:
-      - 80:80
+      - 9999:9999
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./app.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - mariadb
-      - app
+      - app1
+      - app2
     deploy:
       resources:
         limits:
@@ -33,7 +34,7 @@ services:
           cpus: '0.75'
           memory: '1.5GB'
 
-  app:
+  app1:
     build: ../
     ports: 
       - 5000:5000
@@ -53,5 +54,28 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: '1.0GB'
+          cpus: '0.25'
+          memory: '0.5GB'
+
+  app2:
+    build: ../
+    ports: 
+      - 5000:5000
+    volumes: 
+      - ../app:/code
+    environment: 
+      FLASK_APP: main.py
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      FLASK_SECRET_KEY: stress_test
+      PYTHONUNBUFFERED: 1
+      MYSQL_HOST: docker_mariadb_1
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    depends_on: 
+      - mariadb
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '0.5GB'
