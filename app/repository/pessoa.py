@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import List, Optional
 
 from library.mysql import MySQL
@@ -10,10 +11,10 @@ logger = logging.getLogger('Pessoa Repository')
 
 def GetByID(id: str) -> Optional[Pessoa]:
 	query = """
-		SELECT p.id, p.apelido, p.nome, p.nascimento, ps.stack
+		SELECT BIN_TO_UUID(p.id) AS id, p.apelido, p.nome, p.nascimento, ps.stack
 		FROM stresstest.pessoa AS p
 		LEFT JOIN stresstest.pessoa_stacks AS ps ON (ps.pessoa_id = p.id)
-		WHERE p.id = ?
+		WHERE p.id = UUID_TO_BIN(?)
 	"""
 
 	try:
@@ -27,60 +28,69 @@ def GetByID(id: str) -> Optional[Pessoa]:
 	return Pessoa(result)
 
 def Filter(q: str) -> List[Pessoa]:
-	query_filter = q + ' IN BOOLEAN MODE'
+	query_filter = f'*{q}*'
 
 	query = """
-		SELECT *
+		SELECT BIN_TO_UUID(p.id) AS id, p.apelido, p.nome, p.nascimento, ps.stack
 		FROM stresstest.pessoa AS p
 		LEFT JOIN stresstest.pessoa_stacks AS ps ON (ps.pessoa_id = p.id)
 		WHERE
-			MATCH(p.apelido * 1, p.nome * 1) AGAINST(?) OR
-			MATCH(ps.stack) AGAINST(?)
+			MATCH(p.apelido, p.nome) AGAINST(? IN BOOLEAN MODE) OR
+			MATCH(ps.stack) AGAINST(? IN BOOLEAN MODE)
 		LIMIT 50
 	"""
 
 	try:
-		result, _ = MySQL().execute(query, (query_filter,query_filter,), usePrepared=True)
+		result, _ = MySQL().execute(query, (query_filter, query_filter,), usePrepared=True)
 	except:
 		raise
-
+	
 	pessoas: List[Pessoa] = []
 
-	for row in result:
-		pessoas.append(Pessoa(row))
+	result_length = len(result)
+	if result_length == 0:
+		return pessoas
+
+	current_pessoa_id = result[0]['id']
+	current_pessoa_rows = []
+	
+	for i, row in enumerate(result):
+		if row['id'] == current_pessoa_id:
+			current_pessoa_rows.append(row)
+
+			if i < result_length - 1:
+				continue
+
+		pessoas.append(Pessoa(current_pessoa_rows))
+		current_pessoa_id = row['id']
+		current_pessoa_rows = [row]
 
 	return pessoas
 
 def Create(pessoa: Pessoa) -> str:
-	query = """
-		INSERT INTO stresstest.pessoa (apelido, nome, nascimento)
-		VALUES (?, ?, ?)
+	random_uuid = uuid.uuid4()
+
+	query = f"""
+		INSERT INTO stresstest.pessoa (id, apelido, nome, nascimento)
+		VALUES (UUID_TO_BIN('{random_uuid}'), ?, ?, ?)
 	"""
 
 	try:
-		_, pessoa_id = MySQL().execute(query, (pessoa.apelido, pessoa.nome, pessoa.nascimento,), usePrepared=True)
+		MySQL().execute(query, (pessoa.apelido, pessoa.nome, pessoa.nascimento,), usePrepared=True)
 	except:
 		raise
 
-	if pessoa_id is None:
-		try:
-			MySQL().rollback()
-		except:
-			raise
-
-		raise Exception('failed to create Pessoa')
-
-	stacks_query = """
-		INSERT INTO stresstest.pessoa (pessoa_id, stack)
-		VALUES (?, ?)
+	stacks_query = f"""
+		INSERT INTO stresstest.pessoa_stacks (pessoa_id, stack)
+		VALUES (UUID_TO_BIN('{random_uuid}'), ?)
 	"""
 
 	for stack in pessoa.stack:
 		try:
-			MySQL().execute(stacks_query, (pessoa_id, stack,), usePrepared=True)
+			MySQL().execute(stacks_query, (stack,), usePrepared=True)
 
 		except Exception as e:
 			logger.warning(f'could not create pessoa stack: {e}. Skipping...')
 			continue
 
-	return pessoa_id
+	return random_uuid

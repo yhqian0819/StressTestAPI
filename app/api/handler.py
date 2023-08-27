@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-import datetime
+from datetime import datetime
 
 import flask
 from flask import request, Response
@@ -49,7 +49,7 @@ def NewPessoa() -> Response:
 		raise errors.UnprocessableEntity(f'"nome" field must not have more than {NOME_MAX_LENGTH} characters')
 	
 	try:
-		nascimento = datetime.date.fromisoformat(data['nascimento'])
+		nascimento = datetime.strptime(data['nascimento'], '%Y-%m-%d').date()
 	except ValueError:
 		raise errors.BadRequest('"nascimento" field must be a date in the yyyy-mm-dd format')
 

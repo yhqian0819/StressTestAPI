@@ -9,7 +9,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./app.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - mariadb
+      - mysql
       - app1
       - app2
     deploy:
@@ -18,14 +18,14 @@ services:
           cpus: '0.25'
           memory: '0.5GB'
 
-  mariadb:
-    image: mariadb:10.4
+  mysql:
+    image: mysql:8.1.0
     ports:
       - 3306:3306
     restart: always
     volumes:
-      - ../database:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql.conf:/etc/my.cnf
     environment:
       MYSQL_ROOT_PASSWORD: root
     deploy:
@@ -36,8 +36,8 @@ services:
 
   app1:
     build: ../
-    ports: 
-      - 5000:5000
+    expose: 
+      - "5000"
     volumes: 
       - ../app:/code
     environment: 
@@ -46,11 +46,11 @@ services:
       FLASK_DEBUG: 0
       FLASK_SECRET_KEY: stress_test
       PYTHONUNBUFFERED: 1
-      MYSQL_HOST: docker_mariadb_1
+      MYSQL_HOST: docker_mysql_1
       MYSQL_USER: root
       MYSQL_PASSWORD: root
     depends_on: 
-      - mariadb
+      - mysql
     deploy:
       resources:
         limits:
@@ -59,8 +59,8 @@ services:
 
   app2:
     build: ../
-    ports: 
-      - 5000:5000
+    expose: 
+      - "5000"
     volumes: 
       - ../app:/code
     environment: 
@@ -69,11 +69,11 @@ services:
       FLASK_DEBUG: 0
       FLASK_SECRET_KEY: stress_test
       PYTHONUNBUFFERED: 1
-      MYSQL_HOST: docker_mariadb_1
+      MYSQL_HOST: docker_mysql_1
       MYSQL_USER: root
       MYSQL_PASSWORD: root
     depends_on: 
-      - mariadb
+      - mysql
     deploy:
       resources:
         limits:

@@ -1,5 +1,5 @@
 import logging
-import datetime
+from datetime import date
 from typing import List, Dict, Tuple, Optional
 
 import repository.pessoa as PessoaRepository
@@ -9,7 +9,7 @@ from library.mysql import IntegrityError
 
 logger = logging.getLogger('Pessoa Service')
 
-def Create(apelido: str, nome: str, nascimento: datetime.date, stack: List[str]) -> str:
+def Create(apelido: str, nome: str, nascimento: date, stack: List[str]) -> str:
 	pessoa = Pessoa()
 	pessoa.apelido = apelido
 	pessoa.nome = nome
