@@ -94,3 +94,19 @@ def Create(pessoa: Pessoa) -> str:
 			continue
 
 	return random_uuid
+
+def Count() -> int:
+	query = """
+		SELECT COUNT(*) AS quantity
+		FROM stresstest.pessoa
+	"""
+
+	try:
+		result, _ = MySQL().execute(query)
+	except:
+		raise
+
+	if len(result) == 0:
+		return 0
+
+	return int(result[0]['quantity'])

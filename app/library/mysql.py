@@ -2,31 +2,13 @@ import os
 import logging
 from threading import Lock
 from typing import List, Optional, Tuple, Callable
-from mysql.connector import connection as dbConnection
+
+import mysql.connector.pooling as dbConnector
 from mysql.connector.cursor import MySQLCursor, MySQLCursorPrepared, MySQLCursorDict
 from mysql.connector.errors import Error as DBError, InterfaceError, InternalError, IntegrityError, Warning as DBWarning
+#from mysql.connector import connection as dbConnection
 
 logger = logging.getLogger("MYSQL")
-
-class SingletonMeta(type):
-	"""
-	This is a thread-safe implementation of Singleton.
-	"""
-
-	_instances = {}
-
-	_lock: Lock = Lock()
-	"""
-	We now have a lock object that will be used to synchronize threads during
-	first access to the Singleton.
-	"""
-
-	def __call__(cls, *args, **kwargs):
-		with cls._lock:
-			instance = super().__call__(*args, **kwargs)
-			cls._instances[cls] = instance
-		
-		return cls._instances[cls]
 
 class Query():
 	def __init__(self, query: str, params: tuple = (), usePrepared: bool = False) -> None:
@@ -34,80 +16,54 @@ class Query():
 		self.params = params
 		self.usePrepared = usePrepared
 
-
-class MySQL(object, metaclass=SingletonMeta):
-	_instance = None
-
-	def __new__(cls):
-		if cls._instance is None:
-			cls._instance = object.__new__(cls)
-
-			try:
-				MySQL._instance.connect()
-			except:
-				raise
-			
-			logger.info('connected to database')
-
-		return cls._instance
+class MySQL:
+	_pool = None
 
 	def __init__(self):
-		self.connection: dbConnection.MySQLConnection = self._instance.connection
+		if MySQL._pool is None:
+			logger.info('new database connection pool')
 
-	def connect(self) -> None:
-		_user = os.getenv('MYSQL_USER')
-		_password = os.getenv('MYSQL_PASSWORD')
-		_host = os.getenv('MYSQL_HOST')
-
-		try:
-			logger.info('new instance of database or out of connections. trying to connect...')
-
-			connection = dbConnection.MySQLConnection(
-				user=_user, 
-				password=_password, 
-				host=_host, 
-				raise_on_warnings=True, 
-				autocommit=False,
-				charset='utf8',
-				use_unicode=True,
-				time_zone='-03:00',
-			)
-		
-		except DBError as err:
-			logger.error('cannot connect to database: {}'.format(err.msg))
-			MySQL._instance = None
-
-			raise
-
-		self.connection = connection
+			try:
+				MySQL._pool = dbConnector.MySQLConnectionPool(
+					pool_name=os.getenv('MYSQL_POOL_NAME'),
+					pool_size=int(os.getenv('MYSQL_POOL_SIZE')),
+					host=os.getenv('MYSQL_HOST'),
+					user=os.getenv('MYSQL_USER'),
+					password=os.getenv('MYSQL_PASSWORD'),
+					raise_on_warnings=True, 
+					autocommit=False,
+					charset='utf8',
+					use_unicode=True,
+					time_zone='-03:00',
+				)
+			
+			except DBError as err:
+				logger.error('cannot connect to database: {}'.format(err.msg))
+				raise
 
 	def execute(self, query: str, params: tuple = (), usePrepared: bool = False, autoCommit: bool = True) -> Tuple[list, Optional[int]]:
-		if not self.connection.is_connected():
-			try:
-				self.connect()
-			
-			except:
-				raise
+		connection: dbConnector.PooledMySQLConnection = self._pool.get_connection()
 		
 		c_class = MySQLCursorDict
 		if usePrepared and params != ():
 			c_class = MySQLCursorPrepared
 
-		cursor = self.connection.cursor(cursor_class=c_class)
+		cursor = connection.cursor(cursor_class=c_class)
 
 		try:
 			result, column_names, last_inserted_id = execute(cursor, query, params)
-
+		
 		except:
-			self.rollback()
+			self._rollback(connection)
 			raise
 		
 		else:
 			if autoCommit:
-				self.commit()
+				self._commit(connection)
 
 		finally:
 			cursor.close()
+			connection.close()
 
 		response = []
 		for row in result:
@@ -125,61 +81,64 @@ class MySQL(object, metaclass=SingletonMeta):
 
 		return response, last_inserted_id
 
-	def rollback(self):
+	# Only for insert, update or delete queries
+	def executeTxQueries(self, queries: List[Query], do_after_each: Callable = None) -> None:
+		connection: dbConnector.PooledMySQLConnection = self._pool.get_connection()
+
 		try:
-			self.connection.rollback()
+			for query in queries:
+				c_class = MySQLCursorDict
+				if query.usePrepared and query.params != ():
+					c_class = MySQLCursorPrepared
+
+				cursor = connection.cursor(cursor_class=c_class)
+
+				try:
+					execute(cursor, query.query, query.params)
+
+				except:
+					raise
+
+				else:
+					if do_after_each is not None:
+						do_after_each(query)
+				
+				finally:
+					cursor.close()
+
+		except:
+			self._rollback(connection)
+			raise
+
+		else:
+			self._commit(connection)
+
+		finally:
+			connection.close()
+	
+	def query(self, query: str, params: tuple = (), usePrepared: bool = False) -> Query:
+		return Query(query, params, usePrepared)
+	
+	def _rollback(self, connection: dbConnector.PooledMySQLConnection):
+		try:
+			connection.rollback()
 		
 		except (DBError, InternalError, InterfaceError) as err:
 			logger.debug('error trying to rollback transaction: {}'.format(err.msg))
 			raise
 
-	def commit(self):
+	def _commit(self, connection: dbConnector.PooledMySQLConnection):
 		try:
-			self.connection.commit()
-		
+			connection.commit()
+
 		except (DBError, InternalError, InterfaceError) as err:
 			logger.debug('error trying to commit transaction: {}'.format(err.msg))
 			raise
 
-	# Only for insert, update or delete queries
-	def executeTransactionQueries(self, queries: List[Query], do_after_each: Callable = None) -> None:
-		for query in queries:
-			c_class = MySQLCursorDict
-			if query.usePrepared and query.params != ():
-				c_class = MySQLCursorPrepared
-
-			cursor = self.connection.cursor(cursor_class=c_class)
-
-			try:
-				execute(cursor, query.query, query.params)
-
-			except:
-				self.rollback()
-				raise
-
-			finally:
-				if do_after_each is not None:
-					do_after_each(query)
-				
-				cursor.close()
-
-		self.commit()
-	
-	def query(self, query: str, params: tuple = (), usePrepared: bool = False) -> Query:
-		q = Query(query, params, usePrepared)
-
-		return q
-
-	def __del__(self):
-		logger.info('closing database connection and cursor')
-
-		self.connection.close()
-
-
 def execute(cursor: MySQLCursor, query: str, params: tuple) -> Tuple[list, tuple, Optional[int]]:
 	try:
 		cursor.execute(query, params, multi=False)
-	
+
 	except DBWarning as warn:
 		logger.warning(warn.msg)
 	
@@ -192,6 +151,7 @@ def execute(cursor: MySQLCursor, query: str, params: tuple) -> Tuple[list, tuple
 
 	try:
 		result = cursor.fetchall()
+		
 	except InterfaceError as err:
 		if err.msg == "No result set to fetch from" or err.msg == "No result set to fetch from.":
 			return [], (), last_inserted_id
@@ -199,55 +159,3 @@ def execute(cursor: MySQLCursor, query: str, params: tuple) -> Tuple[list, tuple
 		raise
 	
 	return result, column_names, None
-
-"""
-class MySQL(metaclass=SingletonMeta):
-	connection: dbConnection.MySQLConnection = None
-
-	def __init__(self) -> None:
-		_user = os.getenv('MYSQL_USER')
-		_password = os.getenv('MYSQL_PASSWORD')
-		_host = os.getenv('MYSQL_HOST')
-
-		try:
-			logger.info('new instance of database. trying to connect...')
-			self.connection = dbConnection.MySQLConnection(user=_user, password=_password, host=_host, raise_on_warnings=True)
-		
-		except DBError as err:
-			logger.error('cannot connect to database: {}'.format(err.msg))
-			self.connection = None
-
-			raise
-
-		logger.info('connected to database')
-
-	def execute(self, query: str, params: tuple = (), usePrepared: bool = False) -> list:
-		c_class = MySQLCursorDict
-		if usePrepared and params != ():
-			c_class = MySQLCursorPrepared
-
-		cursor = self.connection.cursor(cursor_class=c_class)
-
-		try:
-			result, column_names = execute(cursor, query, params)
-
-		except:
-			raise
-
-		finally:
-			cursor.close()
-
-		response = []
-		for row in result:
-			if c_class == MySQLCursorPrepared:
-				response.append(dict(zip(column_names, row)))
-			else:
-				response.append(row)
-
-		return response
-
-	def __del__(self):
-		logger.info('closing database connection')
-
-		self.connection.close()
-"""

@@ -94,3 +94,16 @@ def FilterPessoas() -> Response:
 	res.set_data(json.dumps(pessoas, ensure_ascii=False, default=Pessoa.serializer))
 
 	return res
+
+def CountPessoas() -> Response:
+	try:
+		pessoas_quantity = PessoaService.Count()
+	except:
+		raise
+
+	res = flask.make_response()
+	res.content_type = 'text/plain; charset=utf-8'
+	res.status_code = 200
+	res.set_data(str(pessoas_quantity))
+
+	return res

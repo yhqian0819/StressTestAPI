@@ -35,7 +35,7 @@ services:
           memory: '1.5GB'
 
   app1:
-    build: ../
+    image: rinha-api
     expose: 
       - "5000"
     volumes: 
@@ -46,9 +46,11 @@ services:
       FLASK_DEBUG: 0
       FLASK_SECRET_KEY: stress_test
       PYTHONUNBUFFERED: 1
-      MYSQL_HOST: docker_mysql_1
+      MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
+      MYSQL_POOL_SIZE: 10
+      MYSQL_POOL_NAME: stress_pool
     depends_on: 
       - mysql
     deploy:
@@ -58,7 +60,7 @@ services:
           memory: '0.5GB'
 
   app2:
-    build: ../
+    image: rinha-api
     expose: 
       - "5000"
     volumes: 
@@ -69,9 +71,11 @@ services:
       FLASK_DEBUG: 0
       FLASK_SECRET_KEY: stress_test
       PYTHONUNBUFFERED: 1
-      MYSQL_HOST: docker_mysql_1
+      MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
+      MYSQL_POOL_SIZE: 10
+      MYSQL_POOL_NAME: stress_pool
     depends_on: 
       - mysql
     deploy:

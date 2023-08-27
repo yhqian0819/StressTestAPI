@@ -43,3 +43,11 @@ def Filter(q: str) -> List[Pessoa]:
 		raise
 
 	return pessoas
+
+def Count() -> int:
+	try:
+		pessoas_quantity = PessoaRepository.Count()
+	except:
+		raise
+
+	return pessoas_quantity

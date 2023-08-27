@@ -24,6 +24,10 @@ def GetPessoaByID(id: str):
 def FilterPessoas():
 	return Handler.FilterPessoas()
 
+@api.route('/contagem-pessoas', methods=['GET'])
+def CountPessoas():
+	return Handler.CountPessoas()
+
 @api.errorhandler(BaseError)
 def handle_crafted_errors(e: BaseError):
 	response = e.get_response()
