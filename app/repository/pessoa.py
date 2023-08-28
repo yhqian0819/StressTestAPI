@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import List, Optional
 
-from library.mysql import MySQL
+from library.mysql import MySQL, Query
 from model.pessoa import Pessoa
 
 import library.errors as errors
@@ -68,30 +68,38 @@ def Filter(q: str) -> List[Pessoa]:
 	return pessoas
 
 def Create(pessoa: Pessoa) -> str:
-	random_uuid = uuid.uuid4()
+	random_uuid = str(uuid.uuid4())
+	queries: List[Query] = []
 
-	query = f"""
-		INSERT INTO stresstest.pessoa (id, apelido, nome, nascimento)
-		VALUES (UUID_TO_BIN('{random_uuid}'), ?, ?, ?)
-	"""
+	queries.append(Query(
+		query=f"""
+			INSERT INTO stresstest.pessoa (id, apelido, nome, nascimento)
+			VALUES (UUID_TO_BIN('{random_uuid}'), ?, ?, ?)
+		""",
+		params=(pessoa.apelido, pessoa.nome, pessoa.nascimento,),
+		usePrepared=True,
+	))
+
+	args = []
+	query_values = ''
+	for stack in pessoa.stack:
+		args.append(stack)
+		query_values += f"(UUID_TO_BIN('{random_uuid}'), ?),"
+
+	if len(pessoa.stack) > 0:
+		queries.append(Query(
+			query=f"""
+				INSERT INTO stresstest.pessoa_stacks (pessoa_id, stack)
+				VALUES {query_values[:-1]}
+			""",
+			params=tuple(args),
+			usePrepared=True,
+		))
 
 	try:
-		MySQL().execute(query, (pessoa.apelido, pessoa.nome, pessoa.nascimento,), usePrepared=True)
+		MySQL().executeTxQueries(queries)
 	except:
 		raise
-
-	stacks_query = f"""
-		INSERT INTO stresstest.pessoa_stacks (pessoa_id, stack)
-		VALUES (UUID_TO_BIN('{random_uuid}'), ?)
-	"""
-
-	for stack in pessoa.stack:
-		try:
-			MySQL().execute(stacks_query, (stack,), usePrepared=True)
-
-		except Exception as e:
-			logger.warning(f'could not create pessoa stack: {e}. Skipping...')
-			continue
 
 	return random_uuid
 
