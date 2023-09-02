@@ -1,6 +1,76 @@
-version: "3.7"
+version: "3.8"
 
 services:
+  mysql:
+    image: mysql:8.1.0
+    ports:
+      - 3306:3306
+    restart: always
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql.conf:/etc/my.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '1.45GB'
+
+  app1:
+    image: rinha-api
+    expose: 
+      - "5000"
+    volumes: 
+      - ./uwsgi.ini:/code/uwsgi.ini
+    environment: 
+      FLASK_APP: main.py
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      FLASK_SECRET_KEY: stress_test
+      PYTHONUNBUFFERED: 1
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_POOL_SIZE: 15 # 10
+      MYSQL_POOL_NAME: stress_pool_1
+      MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
+      MYSQL_GET_POOL_CONNECTION_RETRIES:
+    depends_on: 
+      - mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.45'
+          memory: '0.65GB'
+
+  app2:
+    image: rinha-api
+    expose: 
+      - "5000"
+    volumes: 
+      - ./uwsgi.ini:/code/uwsgi.ini
+    environment: 
+      FLASK_APP: main.py
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      FLASK_SECRET_KEY: stress_test
+      PYTHONUNBUFFERED: 1
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_POOL_SIZE: 15 # 10
+      MYSQL_POOL_NAME: stress_pool_2
+      MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
+      MYSQL_GET_POOL_CONNECTION_RETRIES:
+    depends_on: 
+      - mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.45'
+          memory: '0.65GB'
+
   web:
     image: nginx:1.17
     ports:
@@ -17,73 +87,3 @@ services:
         limits:
           cpus: '0.1'
           memory: '0.25GB'
-
-  mysql:
-    image: mysql:8.1.0
-    ports:
-      - 3306:3306
-    restart: always
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./mysql.conf:/etc/my.cnf
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: '1.25GB'
-
-  app1:
-    image: rinha-api
-    expose: 
-      - "5000"
-    volumes: 
-      - ../app:/code
-    environment: 
-      FLASK_APP: main.py
-      FLASK_ENV: production
-      FLASK_DEBUG: 0
-      FLASK_SECRET_KEY: stress_test
-      PYTHONUNBUFFERED: 1
-      MYSQL_HOST: mysql
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 10
-      MYSQL_POOL_NAME: stress_pool_1
-      MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
-      MYSQL_GET_POOL_CONNECTION_RETRIES:
-    depends_on: 
-      - mysql
-    deploy:
-      resources:
-        limits:
-          cpus: '0.45'
-          memory: '0.75GB'
-
-  app2:
-    image: rinha-api
-    expose: 
-      - "5000"
-    volumes: 
-      - ../app:/code
-    environment: 
-      FLASK_APP: main.py
-      FLASK_ENV: production
-      FLASK_DEBUG: 0
-      FLASK_SECRET_KEY: stress_test
-      PYTHONUNBUFFERED: 1
-      MYSQL_HOST: mysql
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 10
-      MYSQL_POOL_NAME: stress_pool_2
-      MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
-      MYSQL_GET_POOL_CONNECTION_RETRIES:
-    depends_on: 
-      - mysql
-    deploy:
-      resources:
-        limits:
-          cpus: '0.45'
-          memory: '0.75GB'

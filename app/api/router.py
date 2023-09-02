@@ -3,6 +3,7 @@ from flask import Blueprint, request, render_template
 
 import json
 import logging
+import requests
 
 import api.handler as Handler
 from library.errors import InternalError, BaseError
@@ -27,6 +28,11 @@ def FilterPessoas():
 @api.route('/contagem-pessoas', methods=['GET'])
 def CountPessoas():
 	return Handler.CountPessoas()
+
+@api.route('/test')
+def test_request():
+    response = requests.get('https://httpbin.org/delay/5').json()
+    return response
 
 @api.errorhandler(BaseError)
 def handle_crafted_errors(e: BaseError):

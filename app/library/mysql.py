@@ -74,9 +74,8 @@ class MySQL:
 		if usePrepared and params != ():
 			c_class = MySQLCursorPrepared
 
-		cursor = connection.cursor(cursor_class=c_class)
-
 		try:
+			cursor = connection.cursor(cursor_class=c_class)
 			result, column_names, last_inserted_id = execute(cursor, query, params)
 		
 		except:

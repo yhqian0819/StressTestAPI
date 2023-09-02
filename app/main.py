@@ -1,11 +1,12 @@
-import eventlet
-eventlet.monkey_patch()
+#import eventlet
+#eventlet.monkey_patch()
 
-import flask
-from flask import Flask, request
+#from gevent import monkey
+#monkey.patch_all()
+
+from flask import Flask
 from werkzeug.exceptions import HTTPException
 
-import json
 import logging
 
 from api.router import api as API
