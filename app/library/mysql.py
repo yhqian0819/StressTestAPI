@@ -1,10 +1,11 @@
 import os
 import time
 import logging
+#import threading
 from typing import List, Optional, Tuple, Callable, Union
 
 import mysql.connector.pooling as dbConnector
-from mysql.connector.cursor import MySQLCursorPrepared, MySQLCursorDict
+from mysql.connector.cursor_cext import CMySQLCursorPrepared, CMySQLCursorDict
 from mysql.connector.errors import Error as DBError, InterfaceError, InternalError, IntegrityError, Warning as DBWarning, PoolError
 
 logger = logging.getLogger("MYSQL")
@@ -17,11 +18,13 @@ class Query():
 
 class MySQL:
 	_pool = None
+	#_lock = threading.Lock()
 
 	def __init__(self):
 		self.get_connection_retries = int(os.getenv('MYSQL_GET_POOL_CONNECTION_RETRIES', default=0))
 		self.get_connection_timeout = int(os.getenv('MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS', default=0))
 
+		#with MySQL._lock:
 		if MySQL._pool is None:
 			logger.info('new database connection pool')
 
@@ -43,7 +46,7 @@ class MySQL:
 				logger.error('cannot connect to database: {}'.format(err.msg))
 				raise
 	
-	def get_connection(self) -> dbConnector.PooledMySQLConnection:
+	def _get_connection(self) -> dbConnector.PooledMySQLConnection:
 		if self.get_connection_timeout == 0 or self.get_connection_retries == 0:
 			return self._pool.get_connection()
 
@@ -68,11 +71,12 @@ class MySQL:
 		return connection
 
 	def execute(self, query: str, params: tuple = (), usePrepared: bool = False, autoCommit: bool = True) -> Tuple[list, Optional[int]]:
-		connection = self.get_connection()
+		#with MySQL._lock:
+		connection = self._get_connection()
 		
-		c_class = MySQLCursorDict
+		c_class = CMySQLCursorDict
 		if usePrepared and params != ():
-			c_class = MySQLCursorPrepared
+			c_class = CMySQLCursorPrepared
 
 		try:
 			cursor = connection.cursor(cursor_class=c_class)
@@ -92,7 +96,7 @@ class MySQL:
 
 		response = []
 		for row in result:
-			if c_class == MySQLCursorPrepared:
+			if c_class == CMySQLCursorPrepared:
 				r = dict(zip(column_names, row))
 				for key in r:
 					try:
@@ -108,14 +112,15 @@ class MySQL:
 
 	# Only for insert, update or delete queries
 	def executeTxQueries(self, queries: List[Query], do_after_each: Callable = None) -> List[int]:
-		connection: dbConnector.PooledMySQLConnection = self.get_connection()
+		#with MySQL._lock
+		connection: dbConnector.PooledMySQLConnection = self._get_connection()
 		last_inserted_ids: List[int] = []
 
 		try:
 			for query in queries:
-				c_class = MySQLCursorDict
+				c_class = CMySQLCursorDict
 				if query.usePrepared and query.params != ():
-					c_class = MySQLCursorPrepared
+					c_class = CMySQLCursorPrepared
 
 				cursor = connection.cursor(cursor_class=c_class)
 
@@ -165,7 +170,7 @@ class MySQL:
 			logger.debug('error trying to commit transaction: {}'.format(err.msg))
 			raise
 
-def execute(cursor: Union[MySQLCursorDict, MySQLCursorPrepared], query: str, params: tuple) -> Tuple[list, tuple, Optional[int]]:
+def execute(cursor: Union[CMySQLCursorDict, CMySQLCursorPrepared], query: str, params: tuple) -> Tuple[list, tuple, Optional[int]]:
 	try:
 		cursor.execute(query, params, multi=False)
 

@@ -14,13 +14,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: '1.45GB'
+          cpus: '0.8'
+          memory: '1.75GB'
 
   app1:
     image: rinha-api
     expose: 
       - "5000"
+    ports:
+      - 3031:3031
     volumes: 
       - ./uwsgi.ini:/code/uwsgi.ini
     environment: 
@@ -32,7 +34,7 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 15 # 10
+      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 (setar 2 processes e 2 threads uwsgi) or 15
       MYSQL_POOL_NAME: stress_pool_1
       MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
       MYSQL_GET_POOL_CONNECTION_RETRIES:
@@ -41,13 +43,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.45'
-          memory: '0.65GB'
+          cpus: '0.3'
+          memory: '0.5GB'
 
   app2:
     image: rinha-api
     expose: 
       - "5000"
+    ports:
+      - 3032:3031
     volumes: 
       - ./uwsgi.ini:/code/uwsgi.ini
     environment: 
@@ -59,7 +63,7 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 15 # 10
+      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 (setar 2 processes e 2 threads uwsgi) or 15
       MYSQL_POOL_NAME: stress_pool_2
       MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
       MYSQL_GET_POOL_CONNECTION_RETRIES:
@@ -68,8 +72,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.45'
-          memory: '0.65GB'
+          cpus: '0.3'
+          memory: '0.5GB'
 
   web:
     image: nginx:1.17

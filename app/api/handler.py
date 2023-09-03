@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import uuid
 from datetime import datetime
 
 import flask
@@ -66,6 +67,11 @@ def NewPessoa() -> Response:
 	return res
 
 def GetPessoaByID(id: str) -> Response:
+	try:
+		uuid.UUID(id, version=1)
+	except ValueError:
+		raise errors.NotFound(f'pessoa with id "{id}" not found') #change it later
+
 	try:
 		pessoa = PessoaService.GetByID(id)
 	except:

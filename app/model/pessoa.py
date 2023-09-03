@@ -8,20 +8,17 @@ class Pessoa():
 	stack: Union[List[str], None] = None
 	nascimento: date = ''
 
-	def __init__(self, data: List[Dict[str, Any]] = None):
-		if data is None or len(data) == 0:
+	def __init__(self, data: Dict[str, Any] = None):
+		if data is None:
 			return
 		
-		self.id = data[0]['id']
-		self.apelido = data[0]['apelido']
-		self.nome = data[0]['nome']
-		self.nascimento = data[0]['nascimento']
+		self.id = data['id']
+		self.apelido = data['apelido']
+		self.nome = data['nome']
+		self.nascimento = data['nascimento']
 
-		if 'stack' in data[0] and data[0]['stack'] is not None:
-			self.stack: List[str] = []
-
-			for element in data:
-				self.stack.append(element['stack'])
+		if 'stack' in data:
+			self.stack = data['stack'].split(',')
 
 	def serializer(obj):
 		if isinstance(obj, Pessoa):
