@@ -40,14 +40,29 @@ monitor-uwsgi-app1:
 monitor-uwsgi-app2:
 	@uwsgitop http://127.0.0.1:3032
 
+trace-uwsgi-app1:
+	@docker exec vossibility_app1.1.$(shell docker service ps -f 'name=vossibility_app1.1' vossibility_app1 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket1"
+	@docker exec vossibility_app1.1.$(shell docker service ps -f 'name=vossibility_app1.1' vossibility_app1 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket2"
+	@docker exec vossibility_app1.1.$(shell docker service ps -f 'name=vossibility_app1.1' vossibility_app1 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket3"
+	@docker exec vossibility_app1.1.$(shell docker service ps -f 'name=vossibility_app1.1' vossibility_app1 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket4"
+
+trace-uwsgi-app2:
+	@docker exec vossibility_app2.1.$(shell docker service ps -f 'name=vossibility_app2.1' vossibility_app2 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket1"
+	@docker exec vossibility_app2.1.$(shell docker service ps -f 'name=vossibility_app2.1' vossibility_app2 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket2"
+	@docker exec vossibility_app2.1.$(shell docker service ps -f 'name=vossibility_app2.1' vossibility_app2 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket3"
+	@docker exec vossibility_app2.1.$(shell docker service ps -f 'name=vossibility_app2.1' vossibility_app2 -q --no-trunc | head -n1) /bin/bash -c "uwsgi --connect-and-read /tmp/tbsocket4"
+
 docker-exec-app1:
 	@docker exec -ti vossibility_app1.1.$(shell docker service ps -f 'name=vossibility_app1.1' vossibility_app1 -q --no-trunc | head -n1) /bin/bash
 
 docker-exec-app2:
 	@docker exec -ti vossibility_app2.1.$(shell docker service ps -f 'name=vossibility_app2.1' vossibility_app2 -q --no-trunc | head -n1) /bin/bash
 
-dokcer-exec-web:
+docker-exec-web:
 	@docker exec -ti vossibility_web.1.$(shell docker service ps -f 'name=vossibility_web.1' vossibility_web -q --no-trunc | head -n1) /bin/bash
 
 docker-exec-mysql:
 	@docker exec -ti vossibility_mysql.1.$(shell docker service ps -f 'name=vossibility_mysql.1' vossibility_mysql -q --no-trunc | head -n1) /bin/bash
+
+run-mysqltuner:
+	@perl /home/pedroegg/mysqltuner.pl --host 127.0.0.1 --user root --pass root --buffers --dbstat --idxstat --sysstat --pfstat --tbstat --outputfile /home/pedroegg/result_mysqltuner.txt

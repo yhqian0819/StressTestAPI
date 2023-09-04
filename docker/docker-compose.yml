@@ -22,7 +22,7 @@ services:
     expose: 
       - "5000"
     ports:
-      - 3031:3031
+      - 3031:3031 #uwsgi stats http port 3031
     volumes: 
       - ./uwsgi.ini:/code/uwsgi.ini
     environment: 
@@ -34,7 +34,7 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 (setar 2 processes e 2 threads uwsgi) or 15
+      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 or 15
       MYSQL_POOL_NAME: stress_pool_1
       MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
       MYSQL_GET_POOL_CONNECTION_RETRIES:
@@ -51,7 +51,7 @@ services:
     expose: 
       - "5000"
     ports:
-      - 3032:3031
+      - 3032:3031 #uwsgi stats http port 3032
     volumes: 
       - ./uwsgi.ini:/code/uwsgi.ini
     environment: 
@@ -63,7 +63,7 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 (setar 2 processes e 2 threads uwsgi) or 15
+      MYSQL_POOL_SIZE: 9 # 10 or 9 or 5 or 15
       MYSQL_POOL_NAME: stress_pool_2
       MYSQL_GET_POOL_CONNECTION_TIMEOUT_SECONDS:
       MYSQL_GET_POOL_CONNECTION_RETRIES:

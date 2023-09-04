@@ -5,8 +5,6 @@
 #monkey.patch_all()
 
 from flask import Flask
-from werkzeug.exceptions import HTTPException
-
 import logging
 
 from api.router import api as API

@@ -29,7 +29,7 @@ def FilterPessoas():
 def CountPessoas():
 	return Handler.CountPessoas()
 
-@api.route('/test')
+@api.route('/test', methods=['GET'])
 def test_request():
     response = requests.get('https://httpbin.org/delay/5').json()
     return response

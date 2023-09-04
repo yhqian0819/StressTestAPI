@@ -17,7 +17,7 @@ class Pessoa():
 		self.nome = data['nome']
 		self.nascimento = data['nascimento']
 
-		if 'stack' in data:
+		if 'stack' in data and data['stack'] is not None:
 			self.stack = data['stack'].split(',')
 
 	def serializer(obj):

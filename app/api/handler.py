@@ -1,6 +1,5 @@
 import logging
 import json
-import os
 import uuid
 from datetime import datetime
 
@@ -18,10 +17,11 @@ NOME_MAX_LENGTH = 100
 STACK_MAX_LENGTH = 32
 
 def NewPessoa() -> Response:
+	data = request.get_json(silent=True) #always consume body json data
+
 	if not request.is_json:
 		raise errors.BadRequest('the request body must be a json')
 
-	data = request.get_json()
 	if data is None:
 		raise errors.BadRequest('invalid json')
 	

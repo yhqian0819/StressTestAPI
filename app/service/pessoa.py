@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import List, Dict, Tuple, Optional
+from typing import List
 
 import repository.pessoa as PessoaRepository
 import library.errors as errors

@@ -6,9 +6,10 @@ CREATE TABLE `stresstest`.`pessoa` (
   `apelido` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
   `nome` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `nascimento` DATE NOT NULL,
+  `busca` TEXT COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE (`apelido`),
-  FULLTEXT INDEX (`apelido`, `nome`) WITH PARSER ngram
+  FULLTEXT INDEX (`busca`) WITH PARSER ngram
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `stresstest`.`pessoa_stacks` (
@@ -17,6 +18,5 @@ CREATE TABLE `stresstest`.`pessoa_stacks` (
   `stack` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   INDEX (`pessoa_id`),
-  FULLTEXT INDEX (`stack`) WITH PARSER ngram,
   FOREIGN KEY (`pessoa_id`) REFERENCES `pessoa` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
