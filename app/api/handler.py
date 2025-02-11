@@ -29,6 +29,7 @@ def NewPessoa() -> Response:
 		if not field in data or data[field] is None:
 			raise errors.UnprocessableEntity(f'missing "{field}" field')
 		
+		
 		if not isinstance(field, str):
 			raise errors.BadRequest(f'field "{field}" must be a string')
 		
